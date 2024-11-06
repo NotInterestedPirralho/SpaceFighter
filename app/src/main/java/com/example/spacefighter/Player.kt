@@ -21,10 +21,12 @@ class Player {
     private val GRAVITY = -10
     private val MAX_SPEED = 20
     private val MIN_SPEED = 1
+    // private val BOOST_SPEED = 5
+
 
     var detectCollision : Rect
 
-    constructor(context: Context, width: Int, height: Int){
+    constructor(context: Context, width: Int, height: Int, playerSpeed: Int){
         bitmap = BitmapFactory.decodeResource(context.resources, R.drawable.player)
 
         minX = 0
@@ -36,18 +38,14 @@ class Player {
         x = 75
         y = 50
 
-        speed = 1
+        speed = playerSpeed
 
         detectCollision = Rect(x, y, bitmap.width, bitmap.height)
     }
 
     fun update(){
-        if (boosting) speed += 2
-        else speed -= 5
-        if (speed > MAX_SPEED) speed = MAX_SPEED
-        if (speed < MIN_SPEED) speed = MIN_SPEED
-
-        y -= speed + GRAVITY
+        // Remove existing vertical movement logic
+        // y -= speed + GRAVITY
 
         if (y < minY) y = minY
         if (y > maxY) y = maxY
@@ -56,9 +54,13 @@ class Player {
         detectCollision.top = y
         detectCollision.right = x + bitmap.width
         detectCollision.bottom = y + bitmap.height
-
-
     }
 
+    fun setPosition(touchY: Int) {
+        y = touchY
+    }
 
+    fun checkCollision(enemy: Enemy): Boolean {
+        return Rect.intersects(detectCollision, enemy.detectCollision)
+    }
 }

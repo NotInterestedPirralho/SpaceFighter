@@ -9,6 +9,7 @@ import android.util.AttributeSet
 import android.view.MotionEvent
 import android.view.SurfaceHolder
 import android.view.SurfaceView
+import androidx.compose.runtime.mutableStateOf
 
 class GameView : SurfaceView, Runnable {
 
@@ -22,8 +23,13 @@ class GameView : SurfaceView, Runnable {
     var enemies = arrayListOf<Enemy>()
     lateinit var player : Player
     lateinit var boom : Boom
+    lateinit var score: Score
+    lateinit var asteroid: Asteroid
+    var gameOver = mutableStateOf(false)
 
-    private fun init(context: Context, width: Int, height: Int){
+
+    private fun init(context: Context, width: Int, height: Int, score: Score){
+        this.score = score
 
         surfaceHolder = holder
         paint = Paint()
@@ -36,23 +42,24 @@ class GameView : SurfaceView, Runnable {
             enemies.add(Enemy(context,width, height))
         }
 
-        player = Player(context, width, height)
+        player = Player(context, width, height, playerSpeed = 1)
         boom = Boom(context, width, height)
+        asteroid = Asteroid(context, width, height)
 
     }
 
-    constructor(context: Context?, width: Int, height: Int) : super(context) {
-        init(context!!, width, height)
+    constructor(context: Context?, width: Int, height: Int, score: Score) : super(context) {
+        init(context!!, width, height, score)
     }
-    constructor(context: Context?, attrs: AttributeSet?) : super(context, attrs){
-        init(context!!, 0, 0)
+    constructor(context: Context?, attrs: AttributeSet?, score: Score) : super(context, attrs){
+        init(context!!, 0, 0, score)
     }
-    constructor(context: Context?, attrs: AttributeSet?, defStyleAttr: Int) : super(
+    constructor(context: Context?, attrs: AttributeSet?, defStyleAttr: Int, score: Score) : super(
         context,
         attrs,
         defStyleAttr
     ){
-        init(context!!, 0, 0)
+        init(context!!, 0, 0, score)
     }
 
     fun resume() {
@@ -86,15 +93,22 @@ class GameView : SurfaceView, Runnable {
         for (e in enemies){
             e.update(player.speed)
             if (Rect.intersects(player.detectCollision, e.detectCollision)) {
-
-
                 boom.x = e.x
                 boom.y = e.y
 
                 e.x = -300
-            }
 
+                score.addPoints(10)
+            }
         }
+
+        asteroid.update(player.speed)
+        if (Rect.intersects(player.detectCollision, asteroid.detectCollision)) {
+            // Handle inst-kill logic here
+            playing = false
+            var gameOver = mutableStateOf(false)
+        }
+
         player.update()
     }
 
@@ -121,6 +135,14 @@ class GameView : SurfaceView, Runnable {
             canvas.drawBitmap(boom.bitmap, boom.x.toFloat(), boom.y.toFloat(), paint)
 
 
+            // Draw the asteroid
+            canvas.drawBitmap(asteroid.bitmap, asteroid.x.toFloat(), asteroid.y.toFloat(), paint)
+
+            // Draw the score
+            paint.color = Color.WHITE
+            paint.textSize = 50f
+            canvas.drawText("Score: ${score.points}", 50f, 100f, paint)
+
             surfaceHolder.unlockCanvasAndPost(canvas)
         }
     }
@@ -131,6 +153,9 @@ class GameView : SurfaceView, Runnable {
 
     override fun onTouchEvent(event: MotionEvent?): Boolean {
         when(event?.action){
+            MotionEvent.ACTION_MOVE -> {
+                player.setPosition(event.y.toInt())
+            }
             MotionEvent.ACTION_DOWN -> {
                 player.boosting = true
             }
@@ -140,5 +165,4 @@ class GameView : SurfaceView, Runnable {
         }
         return true
     }
-
 }
